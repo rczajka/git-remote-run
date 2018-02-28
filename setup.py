@@ -9,7 +9,7 @@ setup(
     version=git_remote_run.__version__,
     author='Radek Czajka',
     author_email='rczajka@rczajka.pl',
-    url='https://github.com/rczajka/git-remote-run.git',
+    url='https://github.com/rczajka/git-remote-run',
     packages=find_packages(),
     entry_points={
         'console_scripts': ['git-remote-run=git_remote_run:run']

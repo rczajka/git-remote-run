@@ -12,7 +12,10 @@ setup(
     url='https://github.com/rczajka/git-remote-run',
     packages=find_packages(),
     entry_points={
-        'console_scripts': ['git-remote-run=git_remote_run:run']
+        'console_scripts': [
+            'git-remote-run=git_remote_run:run',
+            'git-remote-setup=git_remote_run:setup',
+        ]
     },
     python_requires='>=3.3',
     license='MIT',

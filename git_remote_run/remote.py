@@ -46,7 +46,7 @@ class Remote:
         archive_exec = '''
             export VDEPLOY_SCRIPT="`mktemp --tmpdir git-remote-run-XXX.sh`"
             cat > "$VDEPLOY_SCRIPT" << 'EOF'
-export REPO_DIR="$1"
+export REPO_DIR="$(python -c 'import os.path, sys; print(os.path.expanduser(sys.argv[1]))' "$1")"
 
 cwd="`pwd`"
 

@@ -7,7 +7,7 @@ import sys
 from git_remote_run.remote import Remote
 
 
-__version__ = '1.0'
+__version__ = '1.1'
 
 
 def upload_command(source_path, target_path):

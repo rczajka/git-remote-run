@@ -184,7 +184,7 @@ def setup():
             cmd.append(upload_command(
                 os.path.join(args.hooks, hook_name),
                 remote_path))
-            cmd.append("chmod " + remote_path)
+            cmd.append("chmod +x " + remote_path)
     cmd = "\n\n".join(cmd)
     args.remote.run(cmd)
 

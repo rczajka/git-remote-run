@@ -7,13 +7,12 @@ import sys
 from git_remote_run.remote import Remote
 
 
-__version__ = '1.1'
+__version__ = '1.2'
 
 
-def upload_command(source_path, target_path):
+def upload_command(source, target_path):
     """Create a command to upload a file."""
-    with open(source_path, 'rb') as f:
-        content = f.read()
+    content = source.read()
     command = '''echo {} | base64 --decode > {}'''.format(
         b64encode(content).decode('latin1'),
         target_path
@@ -26,7 +25,9 @@ class UploadAction(argparse._AppendAction):
     def __call__(self, parser, namespace, values, option_string=None):
         items = argparse._copy.copy(
             argparse._ensure_value(namespace, self.dest, []))
-        items.append(upload_command(*values))
+        items.append(upload_command(
+            open(values[0], 'rb'), values[1]
+        ))
         setattr(namespace, self.dest, items)
 
 
@@ -138,6 +139,39 @@ def run():
     return result['exitcode']
 
 
+def setup_repo(remote):
+    # Find first directory which needs to be created.
+    result = remote.run("""
+        [ -d "$REPO_DIR" ] || (
+            cur="`realpath -m "$REPO_DIR"`"
+            par="`dirname "$cur"`"
+            while [ ! -d "$par" ]; do
+                cur="$par"
+                par="`dirname "$cur"`"
+            done
+            echo "$cur"
+            echo "`whoami`:`id -gn`"
+        )""")
+    if result['stdout']:
+        first_dir, usergroup = result['stdout'].decode('utf-8').strip().rsplit('\n', 2)
+        remote.run_or_sudo('mkdir {d}; chown {u} {d}'.format(
+            d=first_dir, u=usergroup))
+    cmd = """
+        mkdir -p "$REPO_DIR"
+        git init --bare "$REPO_DIR"
+    """
+    return remote.run(cmd)
+
+
+def upload_hook_command(source, hook_name):
+    cmd = []
+    remote_path = '"$REPO_DIR"/hooks/' + quote(hook_name)
+    cmd.append(upload_command(source, remote_path))
+    cmd.append("chmod +x " + remote_path)
+    return "\n\n".join(cmd);
+
+
+
 def setup():
     """git-remote-setup command starts here."""
     parser = argparse.ArgumentParser(
@@ -158,33 +192,14 @@ def setup():
 
     args = parser.parse_args()
 
-    # Find first directory which needs to be created.
-    result = args.remote.run("""
-        [ -d "$REPO_DIR" ] || (
-            cur="`realpath -m "$REPO_DIR"`"
-            par="`dirname "$cur"`"
-            while [ ! -d "$par" ]; do
-                cur="$par"
-                par="`dirname "$cur"`"
-            done
-            echo "$cur"
-            echo "`whoami`:`id -gn`"
-        )""")
-    if result['stdout']:
-        first_dir, usergroup = result['stdout'].decode('utf-8').strip().rsplit('\n', 2)
-        args.remote.run_or_sudo('mkdir {d}; chown {u} {d}'.format(
-            d=first_dir, u=usergroup))
-    cmd = ["""
-        mkdir -p "$REPO_DIR"
-        git init --bare "$REPO_DIR"
-    """]
+    cmd = []
+    setup_repo(args.remote)
     if args.hooks:
         for hook_name in os.listdir(args.hooks):
-            remote_path = '"$REPO_DIR"/hooks/' + quote(hook_name)
-            cmd.append(upload_command(
-                os.path.join(args.hooks, hook_name),
-                remote_path))
-            cmd.append("chmod +x " + remote_path)
+            cmd.append(upload_hook_command(
+                open(os.path.join(args.hooks, hook_name), 'rb'),
+                hook_name
+            ))
     cmd = "\n\n".join(cmd)
     args.remote.run(cmd)
 

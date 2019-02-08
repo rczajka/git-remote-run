@@ -1,3 +1,11 @@
+1.2 (2019-02-08)
+----------------
+
+* Python API: added `setup_repo` and `upload_hook_command` functions,
+  and changed `upload_command` function to accept file-like object
+  instead of a path.
+
+
 1.1 (2018-03-12)
 ----------------
 
